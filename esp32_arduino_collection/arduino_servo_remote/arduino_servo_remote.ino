@@ -14,5 +14,5 @@ void loop() {
   Serial.println(potentiometerValue);
   
   // 延迟一段时间，避免频繁发送数据
-  delay(100);
+  delay(10);
 }
