@@ -11,14 +11,14 @@ const char* serverIP = "192.168.0.14";
 const int serverPort = 8888;
 
 // 定义舵机连接的引脚
-const int servoPin = 2;
+const int servoPin = 22;
 Servo myServo;
 
 WiFiClient client;
 
 void setup() {
-  // 初始化串口通信，波特率为9600
-  Serial.begin(9600);
+  // 初始化串口通信，波特率为115200，方便查看调试信息
+  Serial.begin(115200);
   
   // 初始化舵机
   myServo.attach(servoPin);
@@ -31,11 +31,16 @@ void setup() {
   }
   Serial.println("Connected to WiFi");
   
-  // 连接到服务器
+  // 尝试连接到服务器
+  Serial.print("Trying to connect to server at ");
+  Serial.print(serverIP);
+  Serial.print(":");
+  Serial.println(serverPort);
+  
   if (client.connect(serverIP, serverPort)) {
-    Serial.println("Connected to server");
+    Serial.println("Connected to server successfully!");
   } else {
-    Serial.println("Connection to server failed");
+    Serial.println("Failed to connect to server.");
   }
 }
 
@@ -46,7 +51,7 @@ void loop() {
       String potentiometerValueStr = client.readStringUntil('\n');
       int potentiometerValue = potentiometerValueStr.toInt();
       
-      // 将滑动变阻器的值等比例转换为舵机角度（0-180度）
+      // 将滑动变阻器的值等比例转换为舵机角度（0 - 180度）
       int servoAngle = map(potentiometerValue, 0, 1023, 0, 180);
       
       // 驱动舵机转动到指定角度
@@ -60,10 +65,11 @@ void loop() {
     }
   } else {
     // 尝试重新连接到服务器
+    Serial.println("Connection lost. Trying to reconnect...");
     if (client.connect(serverIP, serverPort)) {
       Serial.println("Reconnected to server");
     } else {
-      Serial.println("Reconnection to server failed");
+      Serial.println("Reconnection failed");
       delay(5000);
     }
   }
