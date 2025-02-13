@@ -1,0 +1,1 @@
+arduino uno连接好滑动变阻器，esp32连接好舵机,在目录下bash python文件，等待连接上即可。
