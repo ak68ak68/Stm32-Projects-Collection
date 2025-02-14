@@ -11,6 +11,7 @@ const char* password = "18962426951";
 
 // 舵机控制引脚
 const int servoPin = 22;
+
 // 定义舵机信号引脚连接到ESP32的GPIO 22
 Servo myServo;
 // 创建一个舵机对象
@@ -61,6 +62,8 @@ void loop() {
     // 如果有新的客户端连接
     Serial.println("New client connected");
     String currentLine = "";
+    int currentAngle = 90; // 默认初始角度为90度
+
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
@@ -72,9 +75,11 @@ void loop() {
             client.println();
             client.println("<html><body>");
             client.println("<h1>SG90 Servo Control</h1>");
-            // 使用滑块替换输入框
-            client.println("<form method='get'>");
-            client.println("<input type='range' name='angle' min='0' max='180' value='90' oninput='this.form.submit()'>");
+            // 构建带有当前角度值的滑块
+            client.print("<form method='get'>");
+            client.print("<input type='range' name='angle' min='0' max='180' value='");
+            client.print(currentAngle);
+            client.print("' oninput='this.form.submit()'>");
             client.println("</form>");
             client.println("</body></html>");
             break;
@@ -97,6 +102,7 @@ void loop() {
           int angle = angleStr.toInt();
           if (angle >= 0 && angle <= 180) {
             myServo.write(angle);
+            currentAngle = angle; // 更新当前角度值
           }
         }
       }
