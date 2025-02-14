@@ -13,6 +13,7 @@ const char* password = "18962426951";
 const int servoPin = 22;
 
 // 定义舵机信号引脚连接到ESP32的GPIO 22
+
 Servo myServo;
 // 创建一个舵机对象
 
@@ -74,6 +75,13 @@ void loop() {
             client.println("Content-type:text/html");
             client.println();
             client.println("<html><body>");
+            client.println("<style>");
+            // 定义滑动条的样式
+            client.println("input[type=range] {");
+            client.println("  width: 300px; /* 设置滑动条的宽度 */");
+            client.println("  height: 20px; /* 设置滑动条的高度 */");
+            client.println("}");
+            client.println("</style>");
             client.println("<h1>SG90 Servo Control</h1>");
             // 构建带有当前角度值的滑块
             client.print("<form method='get'>");
