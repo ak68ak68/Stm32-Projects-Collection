@@ -80,8 +80,8 @@ void loop() {
             client.println("<head>");
             client.println("<style>");
             client.println(".steering-wheel {");
-            client.println("  width: 200px;");
-            client.println("  height: 200px;");
+            client.println("  width: 400px;");
+            client.println("  height: 400px;");
             // 设置方向盘的背景图片为网络 URL 图片，需替换为实际有效的图片链接
             client.println("  background: url('https://preview.qiantucdn.com/58pic/38/36/68/44g58PICFpGMuDuI6heER_PIC2018.png!qt_w320') no-repeat center center;");
             client.println("  background-size: cover;");
