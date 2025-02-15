@@ -35,9 +35,9 @@ void setup() {
   ESP32PWM::allocateTimer(3);
   
   // 尝试调整 PWM 频率，这里设置为 60Hz
-  myServo.setPeriodHertz(60);
+  myServo.setPeriodHertz(50);
   // 尝试调整脉冲宽度范围
-  myServo.attach(servoPin, 600, 2200);
+  myServo.attach(servoPin, 500, 2500);
 
   // 启动 WiFi 连接
   WiFi.begin(ssid, password);
