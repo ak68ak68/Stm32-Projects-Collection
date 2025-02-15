@@ -1,8 +1,7 @@
+
 #include <WiFi.h>
-// 引入WiFi库，用于ESP32连接到无线网络
 #include <ESP32Servo.h>
-// 引入ESP32Servo库，用于控制舵机
-#include <SPIFFS.h>
+
 // 替换为你的网络信息
 const char* ssid = "360WiFi-F3C43C";
 // 定义WiFi网络的名称
@@ -15,9 +14,16 @@ const int servoPin = 22;
 // 定义舵机信号引脚连接到ESP32的GPIO 22
 
 
+
 Servo myServo;
 
 WiFiServer server(80);
+
+// 滤波参数
+#define FILTER_SIZE 5
+int angleFilter[FILTER_SIZE];
+int filterIndex = 0;
+int filterSum = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -27,10 +33,11 @@ void setup() {
   ESP32PWM::allocateTimer(1);
   ESP32PWM::allocateTimer(2);
   ESP32PWM::allocateTimer(3);
-  // 设置舵机的 PWM 频率为 50Hz
-  myServo.setPeriodHertz(50);
-  // 将舵机对象连接到指定引脚，并设置脉冲宽度范围
-  myServo.attach(servoPin, 500, 2400);
+  
+  // 尝试调整 PWM 频率，这里设置为 60Hz
+  myServo.setPeriodHertz(60);
+  // 尝试调整脉冲宽度范围
+  myServo.attach(servoPin, 600, 2200);
 
   // 启动 WiFi 连接
   WiFi.begin(ssid, password);
@@ -45,6 +52,11 @@ void setup() {
   // 启动 WiFi 服务器，监听 80 端口
   server.begin();
   Serial.println("Server started");
+
+  // 初始化滤波数组
+  for (int i = 0; i < FILTER_SIZE; i++) {
+    angleFilter[i] = 0;
+  }
 }
 
 void loop() {
@@ -83,6 +95,8 @@ void loop() {
             client.println("  const steeringWheel = document.querySelector('.steering-wheel');");
             client.println("  let startAngle = 0;");
             client.println("  let currentAngle = 0;");
+            client.println("  let lastSendTime = 0;");
+            client.println("  const sendInterval = 100; // 发送间隔，单位为毫秒");
 
             // 处理鼠标按下事件
             client.println("  steeringWheel.addEventListener('mousedown', function(e) {");
@@ -107,6 +121,11 @@ void loop() {
 
             // 鼠标移动事件处理函数
             client.println("  function onMouseMove(e) {");
+            client.println("    const now = Date.now();");
+            client.println("    if (now - lastSendTime < sendInterval) {");
+            client.println("      return;");
+            client.println("    }");
+            client.println("    lastSendTime = now;");
             client.println("    const rect = steeringWheel.getBoundingClientRect();");
             client.println("    const centerX = rect.left + rect.width / 2;");
             client.println("    const centerY = rect.top + rect.height / 2;");
@@ -125,6 +144,11 @@ void loop() {
 
             // 触摸移动事件处理函数
             client.println("  function onTouchMove(e) {");
+            client.println("    const now = Date.now();");
+            client.println("    if (now - lastSendTime < sendInterval) {");
+            client.println("      return;");
+            client.println("    }");
+            client.println("    lastSendTime = now;");
             client.println("    const rect = steeringWheel.getBoundingClientRect();");
             client.println("    const centerX = rect.left + rect.width / 2;");
             client.println("    const centerY = rect.top + rect.height / 2;");
@@ -179,12 +203,19 @@ void loop() {
             }
             angleStr += c;
           }
-          int angle = angleStr.toInt();
-          // 确保接收到的角度在 0 到 180 度范围内
-          if (angle >= 0 && angle <= 180) {
-            // 将接收到的角度映射到舵机可转动的 0 - 180 度范围
-            angle = map(angle, 0, 180, 0, 180);
-            myServo.write(angle);
+          int newAngle = angleStr.toInt();
+          if (newAngle >= 0 && newAngle <= 180) {
+            // 滤波处理
+            filterSum -= angleFilter[filterIndex];
+            angleFilter[filterIndex] = newAngle;
+            filterSum += newAngle;
+            filterIndex = (filterIndex + 1) % FILTER_SIZE;
+            int filteredAngle = filterSum / FILTER_SIZE;
+
+            // 控制舵机转动
+            myServo.write(filteredAngle);
+            // 添加 20 毫秒的延时，让舵机有足够时间完成动作
+            delay(20); 
           }
         }
       }
