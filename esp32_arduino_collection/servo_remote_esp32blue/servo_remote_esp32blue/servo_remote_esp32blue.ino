@@ -30,67 +30,84 @@ class MyServerCallbacks: public BLEServerCallbacks {
 // 自定义回调类，处理特征值的写入事件
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
-        // 将 String 类型转换为 const char* 类型
         const char* valueCStr = pCharacteristic->getValue().c_str();
-        // 使用 std::string 的构造函数将 const char* 转换为 std::string 类型
         std::string value = std::string(valueCStr);
 
-        if (value.length() > 0) {
-            Serial.println("Received Value: " + String(value.c_str()));
+        // 打印接收到的原始数据，方便调试
+        Serial.print("Received raw data: ");
+        Serial.println(value.c_str());
 
-            // 根据接收到的值控制 LED 灯
-            if (value[0] == '1') {
-                digitalWrite(ledPin, HIGH);
-            } else if (value[0] == '0') {
-                digitalWrite(ledPin, LOW);
+        // 检查接收到的数据长度
+        if (value.length() > 0) {
+            // 将十六进制字符串转换为十进制整数
+            char* endptr;
+            long hexValue = strtol(value.c_str(), &endptr, 16);
+
+            // 检查转换是否成功
+            if (*endptr == '\0') {
+                Serial.print("Converted hex value: ");
+                Serial.println(hexValue);
+
+                // 根据转换后的十进制值控制 LED 灯
+                if (hexValue == 1) {
+                    digitalWrite(ledPin, HIGH);
+                } else if (hexValue == 0) {
+                    digitalWrite(ledPin, LOW);
+                } else {
+                    Serial.println("Invalid hex value received!");
+                }
+            } else {
+                Serial.println("Invalid hex string received!");
             }
+        } else {
+            Serial.println("Received empty data!");
         }
     }
 };
 
 void setup() {
-  // 初始化串口通信，用于调试信息输出
-  Serial.begin(115200);
+    // 初始化串口通信，用于调试信息输出
+    Serial.begin(115200);
 
-  // 初始化 LED 引脚
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
+    // 初始化 LED 引脚
+    pinMode(ledPin, OUTPUT);
+    digitalWrite(ledPin, LOW);
 
-  // 初始化 BLE 设备
-  BLEDevice::init("ESP32_BLE_LED");
+    // 初始化 BLE 设备
+    BLEDevice::init("ESP32_BLE_LED");
 
-  // 创建 BLE 服务器
-  BLEServer *pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
+    // 创建 BLE 服务器
+    BLEServer *pServer = BLEDevice::createServer();
+    pServer->setCallbacks(new MyServerCallbacks());
 
-  // 创建 BLE 服务
-  BLEService *pService = pServer->createService(SERVICE_UUID);
+    // 创建 BLE 服务
+    BLEService *pService = pServer->createService(SERVICE_UUID);
 
-  // 创建 BLE 特征
-  pCharacteristic = pService->createCharacteristic(
+    // 创建 BLE 特征
+    pCharacteristic = pService->createCharacteristic(
                       CHARACTERISTIC_UUID,
                       BLECharacteristic::PROPERTY_READ |
                       BLECharacteristic::PROPERTY_WRITE
                     );
 
-  pCharacteristic->setCallbacks(new MyCallbacks());
+    pCharacteristic->setCallbacks(new MyCallbacks());
 
-  // 添加客户端特征配置描述符
-  pCharacteristic->addDescriptor(new BLE2902());
+    // 添加客户端特征配置描述符
+    pCharacteristic->addDescriptor(new BLE2902());
 
-  // 启动服务
-  pService->start();
+    // 启动服务
+    pService->start();
 
-  // 启动蓝牙广播
-  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(SERVICE_UUID);
-  pAdvertising->setScanResponse(false);
-  pAdvertising->setMinPreferred(0x0);
-  BLEDevice::startAdvertising();
-  Serial.println("Waiting a client connection to notify...");
+    // 启动蓝牙广播
+    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+    pAdvertising->addServiceUUID(SERVICE_UUID);
+    pAdvertising->setScanResponse(false);
+    pAdvertising->setMinPreferred(0x0);
+    BLEDevice::startAdvertising();
+    Serial.println("Waiting a client connection to notify...");
 }
 
 void loop() {
-  // 可以在这里添加其他任务
-  delay(1000);
+    // 可以在这里添加其他任务
+    delay(1000);
 }
